@@ -4,83 +4,142 @@ import DWES.Ticket;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Pruebas de la funcionalidad nueva de estadísticas.
+ * Pruebas de las estadísticas calculadas por {@link GestorTickets}.
+ *
+ * <p>Comprueba los casos de colección vacía, incidencias abiertas
+ * e incidencias abiertas y cerradas.</p>
+ *
+ * @version 1.0
  */
 class GestorTicketsEstadisticasTest {
 
+    /**
+     * Comprueba las estadísticas cuando no existen incidencias.
+     */
     @Test
-    void gestorVacioDebeTenerTodasLasEstadisticasAZero() {
+    void estadisticasDeGestorVacioDebenSerCero() {
 
-        GestorTickets gestor =
-                new GestorTickets();
+        GestorTickets gestor = new GestorTickets();
 
         assertEquals(
                 0,
-                gestor.getTotal()
+                gestor.getTotalTickets()
         );
 
         assertEquals(
                 0,
-                gestor.getAbiertas()
+                gestor.getTicketsAbiertos()
         );
 
         assertEquals(
                 0,
-                gestor.getCerradas()
+                gestor.getTicketsCerrados()
         );
     }
 
+    /**
+     * Comprueba las estadísticas cuando existen dos incidencias
+     * abiertas.
+     */
     @Test
     void dosIncidenciasAbiertasDebenContabilizarseCorrectamente() {
 
-        GestorTickets gestor =
-                new GestorTickets();
+        GestorTickets gestor = new GestorTickets();
 
-        gestor.crearTicket("Primera");
-        gestor.crearTicket("Segunda");
+        gestor.crearTicket(
+                "El teclado no funciona"
+        );
 
-        assertEquals(
-                2,
-                gestor.getTotal()
+        gestor.crearTicket(
+                "No hay conexión de red"
         );
 
         assertEquals(
                 2,
-                gestor.getAbiertas()
+                gestor.getTotalTickets()
+        );
+
+        assertEquals(
+                2,
+                gestor.getTicketsAbiertos()
         );
 
         assertEquals(
                 0,
-                gestor.getCerradas()
+                gestor.getTicketsCerrados()
         );
     }
 
+    /**
+     * Comprueba las estadísticas cuando existe una incidencia cerrada
+     * y otra abierta.
+     */
     @Test
-    void unaIncidenciaCerradaYUnaAbiertaDebenContabilizarseCorrectamente() {
+    void unaCerradaYUnaAbiertaDebenContabilizarseCorrectamente() {
 
-        GestorTickets gestor =
-                new GestorTickets();
+        GestorTickets gestor = new GestorTickets();
 
-        Ticket primera =
-                gestor.crearTicket("Primera");
+        Ticket primera = gestor.crearTicket(
+                "El teclado no funciona"
+        );
 
-        gestor.crearTicket("Segunda");
+        gestor.crearTicket(
+                "No hay conexión de red"
+        );
 
-        primera.cerrar();
+        gestor.cerrarTicket(
+                primera.getIdentificador()
+        );
 
         assertEquals(
                 2,
-                gestor.getTotal()
+                gestor.getTotalTickets()
         );
 
         assertEquals(
                 1,
-                gestor.getAbiertas()
+                gestor.getTicketsAbiertos()
         );
 
         assertEquals(
                 1,
-                gestor.getCerradas()
+                gestor.getTicketsCerrados()
+        );
+    }
+
+    /**
+     * Comprueba que la suma de incidencias abiertas y cerradas
+     * coincide con el número total.
+     */
+    @Test
+    void abiertasMasCerradasDebeCoincidirConElTotal() {
+
+        GestorTickets gestor = new GestorTickets();
+
+        Ticket primera = gestor.crearTicket(
+                "El teclado no funciona"
+        );
+
+        gestor.crearTicket(
+                "No hay conexión de red"
+        );
+
+        Ticket tercera = gestor.crearTicket(
+                "La pantalla no muestra imagen"
+        );
+
+        gestor.cerrarTicket(
+                primera.getIdentificador()
+        );
+
+        gestor.cerrarTicket(
+                tercera.getIdentificador()
+        );
+
+        assertEquals(
+                gestor.getTotalTickets(),
+                gestor.getTicketsAbiertos()
+                        + gestor.getTicketsCerrados()
         );
     }
 }

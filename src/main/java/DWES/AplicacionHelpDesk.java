@@ -4,125 +4,114 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Punto de entrada de la aplicación de consola HelpDesk.
+ * Aplicación principal del sistema HelpDesk.
  *
- * <p>Contiene el menú, la lectura mediante Scanner, los mensajes de consola
- * y la coordinación entre GestorTickets y ArchivoTickets.</p>
+ * <p>Gestiona la interacción con el usuario mediante consola y coordina
+ * las operaciones realizadas por {@link GestorTickets} y
+ * {@link ArchivoTicket}.</p>
+ *
+ * <p>El menú permite crear, listar, buscar y cerrar incidencias,
+ * consultar estadísticas y guardar los datos.</p>
+ *
+ * @version 1.0
  */
 public class AplicacionHelpDesk {
 
+    /**
+     * Gestor de las incidencias.
+     */
     private final GestorTickets gestor;
+
+    /**
+     * Gestor de persistencia de las incidencias.
+     */
     private final ArchivoTicket archivo;
+
+    /**
+     * Scanner utilizado para leer la entrada del usuario.
+     */
     private final Scanner scanner;
 
     /**
-     * Crea una aplicación utilizando tickets.txt.
+     * Crea una nueva aplicación HelpDesk.
      */
     public AplicacionHelpDesk() {
-        this(
-                new GestorTickets(),
-                new ArchivoTicket(),
-                new Scanner(System.in)
-        );
+        gestor = new GestorTickets();
+        archivo = new ArchivoTicket();
+        scanner = new Scanner(System.in);
     }
 
     /**
-     * Constructor inyectable.
+     * Punto de entrada de la aplicación.
      *
-     * @param gestor gestor de incidencias.
-     * @param archivo persistencia de incidencias.
-     * @param scanner lector de teclado.
-     */
-    public AplicacionHelpDesk(
-            GestorTickets gestor,
-            ArchivoTicket archivo,
-            Scanner scanner) {
-
-        if (gestor == null ||
-                archivo == null ||
-                scanner == null) {
-
-            throw new IllegalArgumentException(
-                    "Los componentes de la aplicación no pueden ser nulos."
-            );
-        }
-
-        this.gestor = gestor;
-        this.archivo = archivo;
-        this.scanner = scanner;
-    }
-
-    /**
-     * Punto de entrada del programa.
-     *
-     * @param args argumentos de línea de comandos, no utilizados.
+     * @param args argumentos recibidos desde la línea de comandos.
      */
     public static void main(String[] args) {
 
         AplicacionHelpDesk aplicacion =
                 new AplicacionHelpDesk();
 
-        if (!aplicacion.cargarDatosIniciales()) {
-            return;
-        }
-
+        aplicacion.cargarDatosIniciales();
         aplicacion.ejecutar();
     }
 
     /**
-     * Carga las incidencias al arrancar.
+     * Carga las incidencias almacenadas al iniciar la aplicación.
      *
-     * @return true si la carga ha sido correcta;
-     *         false si el archivo es inválido o no se puede leer.
+     * <p>Si el fichero no existe, la aplicación comienza con una colección
+     * vacía. Si el fichero contiene datos inválidos, se informa del error
+     * y no se incorporan esos datos al gestor.</p>
      */
-    public boolean cargarDatosIniciales() {
+    private void cargarDatosIniciales() {
 
         try {
 
-            List<Ticket> cargados =
-                    archivo.cargar();
+            List<Ticket> tickets = archivo.cargar();
 
-            for (Ticket ticket : cargados) {
+            for (Ticket ticket : tickets) {
                 gestor.añadirTicket(ticket);
             }
 
-            if (cargados.isEmpty()) {
+            if (tickets.isEmpty()) {
 
                 System.out.println(
-                        "No hay archivo de datos. "
-                                + "Se inicia una colección vacía."
+                        "No hay incidencias guardadas."
                 );
 
             } else {
 
                 System.out.println(
-                        "Incidencias cargadas correctamente: "
-                                + cargados.size()
+                        "Se han cargado "
+                                + tickets.size()
+                                + " incidencias."
                 );
             }
-
-            return true;
 
         } catch (IOException | IllegalArgumentException e) {
 
             System.out.println(
-                    "No se han podido cargar las incidencias: "
-                            + e.getMessage()
+                    "ERROR: no se han podido cargar "
+                            + "las incidencias."
             );
 
             System.out.println(
-                    "La aplicación se cerrará para no trabajar "
-                            + "con una carga parcial."
+                    "Motivo: " + e.getMessage()
             );
 
-            return false;
+            System.out.println(
+                    "La aplicación comenzará con "
+                            + "una colección vacía."
+            );
         }
     }
 
     /**
-     * Ejecuta el menú principal hasta que el usuario selecciona salir.
+     * Ejecuta el menú principal.
+     *
+     * <p>El menú continúa ejecutándose hasta que el usuario selecciona
+     * la opción 0.</p>
      */
-    public void ejecutar() {
+    private void ejecutar() {
 
         boolean salir = false;
 
@@ -130,50 +119,62 @@ public class AplicacionHelpDesk {
 
             mostrarMenu();
 
-            int opcion =
-                    leerEntero("Operación: ");
+            int opcion = leerEntero(
+                    "Selecciona una opción: "
+            );
 
             switch (opcion) {
 
-                case 1 -> crearIncidencia();
+                case 1:
+                    crearIncidencia();
+                    break;
 
-                case 2 -> listarIncidencias();
+                case 2:
+                    listarIncidencias();
+                    break;
 
-                case 3 -> buscarIncidencia();
+                case 3:
+                    buscarIncidencia();
+                    break;
 
-                case 4 -> cerrarIncidencia();
+                case 4:
+                    cerrarIncidencia();
+                    break;
 
-                case 5 -> mostrarEstadisticas();
+                case 5:
+                    mostrarEstadisticas();
+                    break;
 
-                case 6 -> guardarIncidencias();
+                case 6:
+                    guardarIncidencias();
+                    break;
 
-                case 0 -> salir = true;
+                case 0:
+                    salir = true;
+                    System.out.println(
+                            "Programa finalizado."
+                    );
+                    break;
 
-                default ->
-                        System.out.println(
-                                "Opción incorrecta. "
-                                        + "Inténtalo de nuevo."
-                        );
+                default:
+                    System.out.println(
+                            "ERROR: opción no válida."
+                    );
             }
         }
 
-        System.out.println(
-                "Programa finalizado."
-        );
-
-        System.out.println(
-                "Recuerda guardar las incidencias antes "
-                        + "de salir si has realizado cambios."
-        );
+        scanner.close();
     }
 
     /**
-     * Muestra el menú principal.
+     * Muestra el menú principal de la aplicación.
      */
-    public void mostrarMenu() {
+    private void mostrarMenu() {
 
         System.out.println();
-        System.out.println("HELPDESK DEL CENTRO");
+        System.out.println("==============================");
+        System.out.println("          HELP DESK");
+        System.out.println("==============================");
         System.out.println("1. Crear incidencia");
         System.out.println("2. Listar incidencias");
         System.out.println("3. Buscar incidencia por identificador");
@@ -181,51 +182,77 @@ public class AplicacionHelpDesk {
         System.out.println("5. Mostrar estadísticas");
         System.out.println("6. Guardar incidencias");
         System.out.println("0. Salir");
+        System.out.println("==============================");
     }
 
     /**
-     * Solicita una descripción y crea una incidencia.
+     * Crea una incidencia solicitando su descripción al usuario.
+     *
+     * <p>Si la descripción no es válida, se informa del error y no
+     * se crea ninguna incidencia.</p>
      */
-    public void crearIncidencia() {
+    private void crearIncidencia() {
 
-        System.out.print("Descripción: ");
+        System.out.println();
+        System.out.println("--- CREAR INCIDENCIA ---");
 
-        String descripcion =
-                scanner.nextLine();
+        System.out.print(
+                "Introduce la descripción: "
+        );
+
+        String descripcion = scanner.nextLine();
 
         try {
 
-            Ticket ticket =
-                    gestor.crearTicket(descripcion);
+            Ticket ticket = gestor.crearTicket(
+                    descripcion
+            );
 
             System.out.println(
-                    "Incidencia creada correctamente "
-                            + "con ID "
+                    "Incidencia creada correctamente."
+            );
+
+            System.out.println(
+                    "Identificador: "
                             + ticket.getIdentificador()
-                            + "."
+            );
+
+            System.out.println(
+                    "Estado: "
+                            + ticket.getEstado()
             );
 
         } catch (IllegalArgumentException e) {
 
             System.out.println(
-                    "No se ha creado la incidencia: "
+                    "No se ha podido crear la incidencia."
+            );
+
+            System.out.println(
+                    "Motivo: "
                             + e.getMessage()
             );
         }
     }
 
     /**
-     * Lista todas las incidencias.
+     * Muestra todas las incidencias registradas.
+     *
+     * <p>Si no existen incidencias, se informa al usuario.</p>
      */
-    public void listarIncidencias() {
+    private void listarIncidencias() {
 
-        List<Ticket> tickets =
-                gestor.getTickets();
+        System.out.println();
+        System.out.println(
+                "--- LISTA DE INCIDENCIAS ---"
+        );
+
+        List<Ticket> tickets = gestor.getTickets();
 
         if (tickets.isEmpty()) {
 
             System.out.println(
-                    "No hay ninguna incidencia."
+                    "No hay incidencias registradas."
             );
 
             return;
@@ -234,30 +261,47 @@ public class AplicacionHelpDesk {
         for (Ticket ticket : tickets) {
 
             System.out.println(
-                    ticket.getIdentificador()
-                            + " - "
+                    "ID: "
+                            + ticket.getIdentificador()
+                            + " | Descripción: "
                             + ticket.getDescripcion()
-                            + " - "
+                            + " | Estado: "
                             + ticket.getEstado()
             );
         }
     }
 
     /**
-     * Busca una incidencia por identificador.
+     * Busca y muestra una incidencia mediante su identificador.
      */
-    public void buscarIncidencia() {
+    private void buscarIncidencia() {
 
-        int identificador =
-                leerIdentificador();
+        System.out.println();
+        System.out.println(
+                "--- BUSCAR INCIDENCIA ---"
+        );
 
-        Ticket ticket =
-                gestor.buscarPorId(identificador);
+        int identificador = leerEntero(
+                "Introduce el identificador: "
+        );
+
+        if (identificador <= 0) {
+
+            System.out.println(
+                    "El identificador debe ser positivo."
+            );
+
+            return;
+        }
+
+        Ticket ticket = gestor.buscarPorId(
+                identificador
+        );
 
         if (ticket == null) {
 
             System.out.println(
-                    "No existe una incidencia "
+                    "No existe ninguna incidencia "
                             + "con ese identificador."
             );
 
@@ -265,71 +309,134 @@ public class AplicacionHelpDesk {
         }
 
         System.out.println(
-                ticket.getIdentificador()
-                        + " - "
+                "Incidencia encontrada:"
+        );
+
+        System.out.println(
+                "ID: "
+                        + ticket.getIdentificador()
+        );
+
+        System.out.println(
+                "Descripción: "
                         + ticket.getDescripcion()
-                        + " - "
+        );
+
+        System.out.println(
+                "Estado: "
                         + ticket.getEstado()
         );
     }
 
     /**
-     * Cierra una incidencia distinguiendo entre inexistente,
-     * abierta y ya cerrada.
+     * Cierra una incidencia mediante su identificador.
+     *
+     * <p>Se informa de forma diferente si la incidencia no existe,
+     * ya estaba cerrada o se ha cerrado correctamente.</p>
      */
-    public void cerrarIncidencia() {
+    private void cerrarIncidencia() {
 
-        int identificador =
-                leerIdentificador();
+        System.out.println();
+        System.out.println(
+                "--- CERRAR INCIDENCIA ---"
+        );
 
-        Ticket ticket =
-                gestor.buscarPorId(identificador);
+        int identificador = leerEntero(
+                "Introduce el identificador: "
+        );
+
+        if (identificador <= 0) {
+
+            System.out.println(
+                    "El identificador debe ser positivo."
+            );
+
+            return;
+        }
+
+        Ticket ticket = gestor.buscarPorId(
+                identificador
+        );
 
         if (ticket == null) {
 
             System.out.println(
-                    "No existe una incidencia "
+                    "No existe ninguna incidencia "
                             + "con ese identificador."
             );
 
-        } else if (ticket.estaCerrado()) {
+            return;
+        }
+
+        if (ticket.estaCerrado()) {
 
             System.out.println(
                     "La incidencia ya estaba cerrada."
             );
 
-        } else {
+            return;
+        }
 
-            ticket.cerrar();
+        boolean cerrada = gestor.cerrarTicket(
+                identificador
+        );
+
+        if (cerrada) {
 
             System.out.println(
                     "Incidencia cerrada correctamente."
+            );
+
+        } else {
+
+            System.out.println(
+                    "No se ha podido cerrar la incidencia."
             );
         }
     }
 
     /**
-     * Muestra las estadísticas calculadas por el gestor.
+     * Muestra las estadísticas de las incidencias.
+     *
+     * <p>El cálculo de las estadísticas corresponde al gestor,
+     * mientras que esta clase únicamente muestra los resultados.</p>
      */
-    public void mostrarEstadisticas() {
+    private void mostrarEstadisticas() {
+
+        System.out.println();
+        System.out.println(
+                "--- ESTADÍSTICAS ---"
+        );
+
+        int total = gestor.getTotalTickets();
+        int abiertos = gestor.getTicketsAbiertos();
+        int cerrados = gestor.getTicketsCerrados();
 
         System.out.println(
-                "Total: " + gestor.getTotal()
+                "Total: " + total
         );
 
         System.out.println(
-                "Abiertas: " + gestor.getAbiertas()
+                "Abiertas: " + abiertos
         );
 
         System.out.println(
-                "Cerradas: " + gestor.getCerradas()
+                "Cerradas: " + cerrados
         );
     }
 
     /**
-     * Guarda la colección completa en disco.
+     * Guarda las incidencias actuales en el fichero.
+     *
+     * <p>El usuario debe utilizar esta opción antes de salir si desea
+     * conservar los cambios realizados durante la ejecución.</p>
      */
-    public void guardarIncidencias() {
+    private void guardarIncidencias() {
+
+        System.out.println();
+        System.out.println(
+                "--- GUARDAR INCIDENCIAS ---"
+        );
 
         try {
 
@@ -344,65 +451,45 @@ public class AplicacionHelpDesk {
         } catch (IOException | IllegalArgumentException e) {
 
             System.out.println(
-                    "No se han podido guardar las incidencias: "
+                    "ERROR: no se han podido guardar "
+                            + "las incidencias."
+            );
+
+            System.out.println(
+                    "Motivo: "
                             + e.getMessage()
             );
         }
     }
 
     /**
-     * Solicita un identificador y repite la petición mientras
-     * la entrada no sea numérica.
+     * Lee un número entero introducido por el usuario.
      *
-     * @return identificador introducido por el usuario.
-     */
-    private int leerIdentificador() {
-
-        System.out.print("Identificador: ");
-
-        while (true) {
-
-            String entrada =
-                    scanner.nextLine();
-
-            try {
-
-                return Integer.parseInt(
-                        entrada.trim()
-                );
-
-            } catch (NumberFormatException e) {
-
-                System.out.print(
-                        "Identificador no válido. "
-                                + "Introduce un número: "
-                );
-            }
-        }
-    }
-
-    /**
-     * Lee una opción numérica del menú.
+     * <p>Si la entrada no es numérica, se solicita nuevamente
+     * sin finalizar la aplicación.</p>
      *
-     * @param mensaje mensaje mostrado al usuario.
-     * @return entero introducido o -1 si no era numérico.
+     * @param mensaje mensaje mostrado antes de solicitar el número.
+     * @return número entero introducido por el usuario.
      */
     private int leerEntero(String mensaje) {
 
-        System.out.print(mensaje);
+        while (true) {
 
-        String entrada =
-                scanner.nextLine();
+            System.out.print(mensaje);
 
-        try {
+            String entrada = scanner.nextLine().trim();
 
-            return Integer.parseInt(
-                    entrada.trim()
-            );
+            try {
 
-        } catch (NumberFormatException e) {
+                return Integer.parseInt(entrada);
 
-            return -1;
+            } catch (NumberFormatException e) {
+
+                System.out.println(
+                        "Entrada no válida. "
+                                + "Debes introducir un número entero."
+                );
+            }
         }
     }
 }

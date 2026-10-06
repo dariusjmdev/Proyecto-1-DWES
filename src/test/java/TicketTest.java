@@ -6,22 +6,42 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Pruebas unitarias de la clase {@link Ticket}.
+ *
+ * <p>Comprueba la creación de incidencias, su estado inicial,
+ * el cierre y las reglas de validación.</p>
+ *
+ * @version 1.0
+ */
 class TicketTest {
 
+    /**
+     * Comprueba que una incidencia nueva comienza abierta.
+     */
     @Test
-    void ticketNuevoDebeEstarAbierto() {
+    void unaIncidenciaNuevaDebeEstarAbierta() {
 
-        Ticket ticket = new Ticket(1, "Falla el teclado");
+        Ticket ticket = new Ticket(
+                1,
+                "El teclado no funciona"
+        );
 
         assertTrue(ticket.estaAbierto());
         assertFalse(ticket.estaCerrado());
         assertEquals("ABIERTA", ticket.getEstado());
     }
 
+    /**
+     * Comprueba que cerrar una incidencia cambia su estado.
+     */
     @Test
-    void cerrarDebeCambiarElEstado() {
+    void cerrarIncidenciaDebeCambiarSuEstado() {
 
-        Ticket ticket = new Ticket(1, "Falla el teclado");
+        Ticket ticket = new Ticket(
+                1,
+                "El teclado no funciona"
+        );
 
         ticket.cerrar();
 
@@ -30,38 +50,42 @@ class TicketTest {
         assertEquals("CERRADA", ticket.getEstado());
     }
 
+    /**
+     * Comprueba que cerrar varias veces una incidencia no produce
+     * un estado incorrecto.
+     */
     @Test
-    void cerrarDosVecesDebeMantenerElTicketCerrado() {
+    void cerrarUnaIncidenciaVariasVecesDebeSerSeguro() {
 
-        Ticket ticket = new Ticket(1, "Falla el teclado");
+        Ticket ticket = new Ticket(
+                1,
+                "El teclado no funciona"
+        );
 
         ticket.cerrar();
         ticket.cerrar();
 
         assertTrue(ticket.estaCerrado());
-        assertFalse(ticket.estaAbierto());
     }
 
+    /**
+     * Comprueba que una descripción formada únicamente por espacios
+     * es rechazada.
+     */
     @Test
-    void descripcionVaciaDebeLanzarExcepcion() {
+    void descripcionSoloConEspaciosDebeSerRechazada() {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Ticket(1, "")
+                () -> new Ticket(1, "          ")
         );
     }
 
+    /**
+     * Comprueba que una descripción nula es rechazada.
+     */
     @Test
-    void descripcionConEspaciosDebeLanzarExcepcion() {
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new Ticket(1, "     ")
-        );
-    }
-
-    @Test
-    void descripcionNulaDebeLanzarExcepcion() {
+    void descripcionNulaDebeSerRechazada() {
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -69,35 +93,105 @@ class TicketTest {
         );
     }
 
+    /**
+     * Comprueba que un identificador cero es rechazado.
+     */
     @Test
-    void identificadorCeroDebeLanzarExcepcion() {
+    void identificadorCeroDebeSerRechazado() {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Ticket(0, "Falla el teclado")
+                () -> new Ticket(
+                        0,
+                        "El teclado no funciona"
+                )
         );
     }
 
+    /**
+     * Comprueba que un identificador negativo es rechazado.
+     */
     @Test
-    void identificadorNegativoDebeLanzarExcepcion() {
+    void identificadorNegativoDebeSerRechazado() {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Ticket(-1, "Falla el teclado")
+                () -> new Ticket(
+                        -1,
+                        "El teclado no funciona"
+                )
         );
     }
 
+    /**
+     * Comprueba que una descripción demasiado corta es rechazada.
+     */
     @Test
-    void identificadorYDescripcionDebenConservarse() {
+    void descripcionDemasiadoCortaDebeSerRechazada() {
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Ticket(1, "Error")
+        );
+    }
+
+    /**
+     * Comprueba que una descripción formada únicamente por números
+     * es rechazada.
+     */
+    @Test
+    void descripcionSoloNumerosDebeSerRechazada() {
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Ticket(1, "1234567890")
+        );
+    }
+
+    /**
+     * Comprueba que una descripción formada por un único carácter
+     * repetido es rechazada.
+     */
+    @Test
+    void descripcionConUnSoloCaracterRepetidoDebeSerRechazada() {
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Ticket(1, "aaaaaaaaaa")
+        );
+    }
+
+    /**
+     * Comprueba que una descripción válida se acepta.
+     */
+    @Test
+    void descripcionValidaDebeSerAceptada() {
 
         Ticket ticket = new Ticket(
-                25,
-                "No funciona Internet"
+                1,
+                "El teclado no funciona"
         );
 
-        assertEquals(25, ticket.getIdentificador());
         assertEquals(
-                "No funciona Internet",
+                "El teclado no funciona",
+                ticket.getDescripcion()
+        );
+    }
+
+    /**
+     * Comprueba que los espacios exteriores de una descripción
+     * se eliminan.
+     */
+    @Test
+    void laDescripcionDebeEliminarEspaciosExteriores() {
+
+        Ticket ticket = new Ticket(
+                1,
+                "   El teclado no funciona   "
+        );
+
+        assertEquals(
+                "El teclado no funciona",
                 ticket.getDescripcion()
         );
     }

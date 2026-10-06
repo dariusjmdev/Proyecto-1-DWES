@@ -1,22 +1,32 @@
 package DWES;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Gestiona la colección de incidencias del HelpDesk.
+ * Gestiona la colección de incidencias del sistema HelpDesk.
  *
- * <p>Se encarga de crear tickets, asignar identificadores consecutivos,
- * buscarlos y calcular las estadísticas. No gestiona la entrada por teclado
- * ni la persistencia en disco.</p>
+ * <p>Es responsable de crear incidencias, asignar identificadores
+ * consecutivos, buscar incidencias, cerrarlas y calcular estadísticas.</p>
+ *
+ * <p>La colección interna permanece encapsulada y nunca se devuelve
+ * directamente al código externo.</p>
+ *
+ * @version 1.0
  */
 public class GestorTickets {
 
+    /**
+     * Colección interna de incidencias.
+     */
     private final List<Ticket> tickets;
+
+    /**
+     * Identificador que se asignará a la siguiente incidencia creada.
+     */
     private int siguienteIdentificador;
 
     /**
-     * Crea un gestor vacío. El primer identificador será el 1.
+     * Crea un gestor vacío.
      */
     public GestorTickets() {
         tickets = new ArrayList<>();
@@ -24,68 +34,74 @@ public class GestorTickets {
     }
 
     /**
-     * Crea un ticket y lo añade al gestor.
+     * Crea una nueva incidencia.
      *
-     * <p>La construcción del ticket se realiza antes de modificar la colección
-     * o el contador. Por ello, si la descripción es inválida, no se consume
-     * ningún identificador.</p>
+     * <p>El identificador no se consume si la creación de la incidencia
+     * falla por una descripción no válida.</p>
      *
      * @param descripcion descripción de la incidencia.
-     * @return el ticket recién creado.
+     * @return incidencia creada.
      * @throws IllegalArgumentException si la descripción no es válida.
      */
     public Ticket crearTicket(String descripcion) {
 
-        Ticket nuevo = new Ticket(
+        Ticket nuevoTicket = new Ticket(
                 siguienteIdentificador,
                 descripcion
         );
 
-        tickets.add(nuevo);
+        tickets.add(nuevoTicket);
         siguienteIdentificador++;
 
-        return nuevo;
+        return nuevoTicket;
     }
 
     /**
-     * Añade al gestor un ticket previamente creado, normalmente procedente
-     * de persistencia.
+     * Añade una incidencia recuperada desde un fichero.
      *
-     * <p>Valida que no exista otro ticket con el mismo identificador
-     * y actualiza el siguiente identificador.</p>
+     * <p>El siguiente identificador se actualiza para garantizar que
+     * las nuevas incidencias tengan un identificador superior al mayor
+     * identificador recuperado.</p>
      *
-     * @param ticket ticket que se quiere incorporar.
-     * @throws IllegalArgumentException si el ticket es nulo o su identificador ya existe.
+     * @param ticket incidencia que se desea añadir.
+     * @throws IllegalArgumentException si el ticket es nulo o si ya
+     *         existe una incidencia con el mismo identificador.
      */
     public void añadirTicket(Ticket ticket) {
 
         if (ticket == null) {
             throw new IllegalArgumentException(
-                    "El ticket no puede ser nulo."
+                    "No se puede añadir una incidencia nula."
             );
         }
 
         if (buscarPorId(ticket.getIdentificador()) != null) {
             throw new IllegalArgumentException(
-                    "Ya existe un ticket con ese identificador."
+                    "Ya existe una incidencia con el identificador "
+                            + ticket.getIdentificador()
+                            + "."
             );
         }
 
         tickets.add(ticket);
 
-        siguienteIdentificador = Math.max(
-                siguienteIdentificador,
-                ticket.getIdentificador() + 1
-        );
+        if (ticket.getIdentificador() >= siguienteIdentificador) {
+            siguienteIdentificador =
+                    ticket.getIdentificador() + 1;
+        }
     }
 
     /**
-     * Busca un ticket por identificador.
+     * Busca una incidencia mediante su identificador.
      *
-     * @param identificador identificador buscado.
-     * @return el mismo objeto Ticket almacenado, o null si no existe.
+     * @param identificador identificador que se desea buscar.
+     * @return incidencia encontrada o {@code null} si no existe.
      */
     public Ticket buscarPorId(int identificador) {
+
+        if (identificador <= 0) {
+            return null;
+        }
 
         for (Ticket ticket : tickets) {
 
@@ -98,17 +114,21 @@ public class GestorTickets {
     }
 
     /**
-     * Cierra un ticket existente.
+     * Cierra una incidencia.
      *
-     * @param identificador identificador del ticket.
-     * @return true si existía y se ha cerrado;
-     *         false si no existe o ya estaba cerrado.
+     * @param identificador identificador de la incidencia.
+     * @return {@code true} si se ha cerrado correctamente;
+     *         {@code false} si no existe o ya estaba cerrada.
      */
     public boolean cerrarTicket(int identificador) {
 
         Ticket ticket = buscarPorId(identificador);
 
-        if (ticket == null || ticket.estaCerrado()) {
+        if (ticket == null) {
+            return false;
+        }
+
+        if (ticket.estaCerrado()) {
             return false;
         }
 
@@ -118,62 +138,62 @@ public class GestorTickets {
     }
 
     /**
-     * Devuelve una copia de la lista interna.
+     * Obtiene una copia de la colección de incidencias.
      *
-     * <p>La lista devuelta es independiente de la lista del gestor,
-     * pero contiene las mismas referencias a los objetos Ticket.</p>
+     * <p>La lista devuelta es una copia, por lo que modificarla no afecta
+     * a la colección interna del gestor. Los objetos {@link Ticket}
+     * contenidos son las mismas instancias.</p>
      *
-     * @return copia de la colección de tickets.
+     * @return copia de la colección de incidencias.
      */
     public List<Ticket> getTickets() {
         return new ArrayList<>(tickets);
     }
 
     /**
+     * Obtiene el número total de incidencias.
+     *
      * @return número total de incidencias.
      */
-    public int getTotal() {
+    public int getTotalTickets() {
         return tickets.size();
     }
 
     /**
+     * Calcula el número de incidencias abiertas.
+     *
      * @return número de incidencias abiertas.
      */
-    public int getAbiertas() {
+    public int getTicketsAbiertos() {
 
-        int contador = 0;
+        int abiertos = 0;
 
         for (Ticket ticket : tickets) {
 
             if (ticket.estaAbierto()) {
-                contador++;
+                abiertos++;
             }
         }
 
-        return contador;
+        return abiertos;
     }
 
     /**
+     * Calcula el número de incidencias cerradas.
+     *
      * @return número de incidencias cerradas.
      */
-    public int getCerradas() {
+    public int getTicketsCerrados() {
 
-        int contador = 0;
+        int cerrados = 0;
 
         for (Ticket ticket : tickets) {
 
             if (ticket.estaCerrado()) {
-                contador++;
+                cerrados++;
             }
         }
 
-        return contador;
-    }
-
-    /**
-     * @return identificador que recibirá la siguiente incidencia creada.
-     */
-    public int getSiguienteIdentificador() {
-        return siguienteIdentificador;
+        return cerrados;
     }
 }

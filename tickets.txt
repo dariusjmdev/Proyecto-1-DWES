@@ -1,0 +1,3 @@
+1;false;Falla el teclado
+2;true;Sin conexión a Internet
+3;false;Uriel no sabe hacer nada

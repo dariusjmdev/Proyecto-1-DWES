@@ -1,52 +1,60 @@
 package DWES;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Se encarga exclusivamente de leer y escribir tickets en un archivo de texto.
+ * Gestiona la persistencia de las incidencias en un fichero.
  *
- * <p>El formato de cada línea es:</p>
+ * <p>El formato utilizado para cada incidencia es:</p>
  *
  * <pre>
- * id;estado;descripcion
+ * identificador;estado;descripcion
  * </pre>
  *
- * <p>El estado se representa mediante {@code true} para cerrado y
- * {@code false} para abierto.</p>
+ * <p>Por ejemplo:</p>
  *
- * <p>La descripción puede contener punto y coma, por lo que el separador
- * solo se interpreta en las dos primeras posiciones.</p>
+ * <pre>
+ * 1;false;El teclado no funciona
+ * 2;true;No tengo conexión a Internet
+ * </pre>
+ *
+ * <p>Se utiliza {@code split(";", 3)} para permitir que una descripción
+ * contenga el carácter {@code ;}.</p>
+ *
+ * @version 1.0
  */
 public class ArchivoTicket {
 
+    /**
+     * Ruta del fichero de persistencia.
+     */
     private final Path ruta;
 
     /**
-     * Crea un gestor de archivo que utiliza tickets.txt.
+     * Crea un gestor utilizando {@code tickets.txt} como fichero.
      */
     public ArchivoTicket() {
         this(Path.of("tickets.txt"));
     }
 
     /**
-     * Crea un gestor de archivo para una ruta concreta.
+     * Crea un gestor utilizando una ruta determinada.
      *
-     * @param ruta ruta del archivo de persistencia.
+     * @param ruta ruta del fichero.
+     * @throws IllegalArgumentException si la ruta es nula.
      */
     public ArchivoTicket(Path ruta) {
 
         if (ruta == null) {
             throw new IllegalArgumentException(
-                    "La ruta no puede ser nula."
+                    "La ruta del fichero no puede ser nula."
             );
         }
 
@@ -54,14 +62,18 @@ public class ArchivoTicket {
     }
 
     /**
-     * Carga todas las incidencias del archivo.
+     * Carga las incidencias almacenadas en el fichero.
      *
-     * <p>Si el archivo no existe, se devuelve una colección vacía.
-     * Si existe pero contiene algún dato inválido o identificadores repetidos,
-     * se lanza una excepción y no se devuelve una carga parcial.</p>
+     * <p>Si el fichero no existe, se devuelve una lista vacía.</p>
      *
-     * @return lista completa de tickets recuperados.
-     * @throws IOException si el archivo no puede leerse o contiene datos inválidos.
+     * <p>Todo el contenido se valida antes de devolver las incidencias.
+     * De esta forma, un fichero con datos inválidos no produce una carga
+     * parcial.</p>
+     *
+     * @return lista de incidencias cargadas.
+     * @throws IOException si se produce un error de lectura.
+     * @throws IllegalArgumentException si el contenido del fichero
+     *         no es válido.
      */
     public List<Ticket> cargar() throws IOException {
 
@@ -69,178 +81,186 @@ public class ArchivoTicket {
             return new ArrayList<>();
         }
 
-        List<Ticket> cargados = new ArrayList<>();
+        if (!Files.isRegularFile(ruta)) {
+            throw new IOException(
+                    "La ruta indicada no corresponde a un fichero válido."
+            );
+        }
+
+        List<String> lineas = Files.readAllLines(
+                ruta,
+                StandardCharsets.UTF_8
+        );
+
+        List<Ticket> ticketsCargados = new ArrayList<>();
         Set<Integer> identificadores = new HashSet<>();
 
-        try (BufferedReader reader =
-                     Files.newBufferedReader(ruta, StandardCharsets.UTF_8)) {
+        int numeroLinea = 0;
 
-            String linea;
-            int numeroLinea = 0;
+        for (String linea : lineas) {
 
-            while ((linea = reader.readLine()) != null) {
+            numeroLinea++;
 
-                numeroLinea++;
+            if (linea.trim().isEmpty()) {
+                continue;
+            }
 
-                if (linea.trim().isEmpty()) {
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": datos inválidos."
-                    );
-                }
+            String[] partes = linea.split(";", 3);
 
-                /*
-                 * Se divide como máximo en tres partes.
-                 *
-                 * Esto permite que la descripción contenga ';'.
-                 */
-                String[] partes = linea.split(";", 3);
+            if (partes.length != 3) {
+                throw new IllegalArgumentException(
+                        "Formato incorrecto en la línea "
+                                + numeroLinea
+                                + "."
+                );
+            }
 
-                if (partes.length != 3) {
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": formato inválido."
-                    );
-                }
+            int identificador;
 
-                int identificador;
+            try {
 
-                try {
-                    identificador = Integer.parseInt(
-                            partes[0].trim()
-                    );
+                identificador = Integer.parseInt(
+                        partes[0].trim()
+                );
 
-                } catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
 
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": identificador inválido.",
-                            e
-                    );
-                }
+                throw new IllegalArgumentException(
+                        "El identificador de la línea "
+                                + numeroLinea
+                                + " no es válido."
+                );
+            }
 
-                if (identificador <= 0) {
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": el identificador debe ser positivo."
-                    );
-                }
+            if (identificador <= 0) {
+                throw new IllegalArgumentException(
+                        "El identificador de la línea "
+                                + numeroLinea
+                                + " debe ser positivo."
+                );
+            }
 
-                if (!identificadores.add(identificador)) {
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": identificador repetido: "
-                                    + identificador
-                    );
-                }
+            if (!identificadores.add(identificador)) {
+                throw new IllegalArgumentException(
+                        "Identificador duplicado: "
+                                + identificador
+                                + "."
+                );
+            }
 
-                boolean cerrado;
+            String estado = partes[1]
+                    .trim()
+                    .toLowerCase();
 
-                if ("true".equalsIgnoreCase(partes[1].trim())) {
+            boolean cerrado;
 
-                    cerrado = true;
+            if (estado.equals("true")) {
+                cerrado = true;
+            } else if (estado.equals("false")) {
+                cerrado = false;
+            } else {
+                throw new IllegalArgumentException(
+                        "Estado inválido en la línea "
+                                + numeroLinea
+                                + "."
+                );
+            }
 
-                } else if ("false".equalsIgnoreCase(partes[1].trim())) {
+            String descripcion = partes[2];
 
-                    cerrado = false;
+            try {
 
-                } else {
+                Ticket ticket = new Ticket(
+                        identificador,
+                        descripcion,
+                        cerrado
+                );
 
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": estado inválido."
-                    );
-                }
+                ticketsCargados.add(ticket);
 
-                try {
+            } catch (IllegalArgumentException e) {
 
-                    cargados.add(
-                            new Ticket(
-                                    identificador,
-                                    partes[2],
-                                    cerrado
-                            )
-                    );
-
-                } catch (IllegalArgumentException e) {
-
-                    throw new IOException(
-                            "Línea " + numeroLinea +
-                                    ": ticket inválido.",
-                            e
-                    );
-                }
+                throw new IllegalArgumentException(
+                        "Datos inválidos en la línea "
+                                + numeroLinea
+                                + ": "
+                                + e.getMessage(),
+                        e
+                );
             }
         }
 
-        return cargados;
+        return ticketsCargados;
     }
 
     /**
-     * Guarda la colección completa, sustituyendo el contenido anterior.
+     * Guarda las incidencias en el fichero.
      *
-     * @param tickets tickets que se desean guardar.
-     * @throws IOException si no se puede escribir el archivo.
-     * @throws IllegalArgumentException si la colección o alguno de sus
-     *                                  tickets es nulo.
+     * <p>El contenido anterior del fichero se sustituye completamente.</p>
+     *
+     * @param tickets incidencias que se desean guardar.
+     * @throws IOException si se produce un error de escritura.
+     * @throws IllegalArgumentException si la lista es nula, contiene
+     *         elementos nulos o contiene identificadores duplicados.
      */
     public void guardar(List<Ticket> tickets) throws IOException {
 
         if (tickets == null) {
             throw new IllegalArgumentException(
-                    "La colección no puede ser nula."
+                    "La lista de incidencias no puede ser nula."
             );
         }
 
         Set<Integer> identificadores = new HashSet<>();
+        List<String> lineas = new ArrayList<>();
 
         for (Ticket ticket : tickets) {
 
             if (ticket == null) {
                 throw new IllegalArgumentException(
-                        "La colección no puede contener tickets nulos."
+                        "La lista no puede contener incidencias nulas."
                 );
             }
 
-            if (!identificadores.add(ticket.getIdentificador())) {
+            if (!identificadores.add(
+                    ticket.getIdentificador()
+            )) {
                 throw new IllegalArgumentException(
-                        "No se pueden guardar identificadores repetidos."
+                        "No se puede guardar porque hay "
+                                + "identificadores duplicados."
                 );
             }
+
+            String linea =
+                    ticket.getIdentificador()
+                            + ";"
+                            + ticket.estaCerrado()
+                            + ";"
+                            + ticket.getDescripcion();
+
+            lineas.add(linea);
         }
 
         Path padre = ruta.toAbsolutePath().getParent();
 
-        if (padre != null) {
+        if (padre != null && !Files.exists(padre)) {
             Files.createDirectories(padre);
         }
 
-        /*
-         * newBufferedWriter() sustituye el contenido anterior.
-         */
-        try (BufferedWriter writer =
-                     Files.newBufferedWriter(
-                             ruta,
-                             StandardCharsets.UTF_8
-                     )) {
-
-            for (Ticket ticket : tickets) {
-
-                writer.write(
-                        ticket.getIdentificador()
-                                + ";"
-                                + ticket.estaCerrado()
-                                + ";"
-                                + ticket.getDescripcion()
-                );
-
-                writer.newLine();
-            }
-        }
+        Files.write(
+                ruta,
+                lineas,
+                StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE
+        );
     }
 
     /**
-     * @return ruta utilizada para la persistencia.
+     * Obtiene la ruta del fichero utilizado.
+     *
+     * @return ruta del fichero.
      */
     public Path getRuta() {
         return ruta;
