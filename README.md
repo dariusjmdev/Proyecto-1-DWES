@@ -1,81 +1,101 @@
-# HelpDesk — Gestión de Incidencias
+## Instrucciones de ejecución
 
-Aplicación de consola desarrollada en Java para la gestión de incidencias de un servicio de soporte técnico.
+### Requisitos previos
 
-El proyecto permite crear, consultar, cerrar y listar incidencias, consultar estadísticas y almacenar la información de forma persistente mediante un archivo de texto.
+- Tener instalado **Java**.
+- Tener instalado **Maven**.
+- Tener el proyecto descargado o clonado desde GitHub.
 
-El desarrollo se ha realizado siguiendo los requisitos establecidos en la práctica evaluable "HelpDesk: gestión de incidencias con pruebas y persistencia".
+### Ejecutar el proyecto
 
----
-
-## 1. Descripción del proyecto
-
-HelpDesk es una aplicación de consola desarrollada en Java que permite gestionar un conjunto de incidencias de soporte técnico.
-
-Cada incidencia dispone de:
-
-- Un identificador numérico único.
-- Una descripción.
-- Un estado que indica si está abierta o cerrada.
-
-La aplicación proporciona un menú interactivo desde el que se pueden realizar las principales operaciones de gestión.
-
-Además, el proyecto incorpora:
-
-- Validación de datos de entrada.
-- Control de errores.
-- Encapsulación de los datos.
-- Gestión automática de identificadores.
-- Persistencia mediante archivo de texto.
-- Pruebas automatizadas con JUnit 5.
-- Documentación mediante Javadoc.
-- Gestión del proyecto mediante Maven.
-- Control de versiones mediante Git.
-
----
-
-## 2. Objetivos
-
-Los principales objetivos del proyecto son:
-
-1. Implementar correctamente una aplicación de gestión de incidencias.
-2. Aplicar principios de programación orientada a objetos.
-3. Separar correctamente las responsabilidades de las diferentes clases.
-4. Validar los datos tanto en la aplicación como en las clases de dominio.
-5. Evitar que los errores de entrada provoquen el cierre inesperado del programa.
-6. Implementar persistencia de datos mediante un archivo de texto.
-7. Recuperar correctamente las incidencias al iniciar la aplicación.
-8. Mantener la continuidad de los identificadores después de cargar datos.
-9. Implementar pruebas unitarias con JUnit 5.
-10. Utilizar Maven para la compilación y ejecución de las pruebas.
-11. Documentar el código mediante Javadoc.
-12. Mantener una estructura de proyecto clara y mantenible.
-
----
-
-## 3. Tecnologías utilizadas
-
-| Tecnología | Uso |
-|---|---|
-| Java | Lenguaje principal |
-| Maven | Gestión y construcción del proyecto |
-| JUnit 5 | Pruebas automatizadas |
-| Git | Control de versiones |
-| IntelliJ IDEA | Entorno de desarrollo |
-| UTF-8 | Codificación del archivo de persistencia |
-
----
-
-## 4. Requisitos
-
-Para ejecutar el proyecto es necesario disponer de:
-
-- Java JDK 17 o superior.
-- Maven.
-- Un entorno de desarrollo compatible con Java, como IntelliJ IDEA.
-
-Se recomienda comprobar la instalación mediante:
+Desde la carpeta raíz del proyecto, ejecutar:
 
 ```bash
-java -version
-mvn -version
+mvn compile
+mvn exec:java
+```
+
+También es posible ejecutar la aplicación directamente desde el IDE ejecutando la clase `AplicacionHelpDesk`.
+
+Al iniciar la aplicación, se cargan automáticamente las incidencias almacenadas en `tickets.txt`, si el archivo existe.
+
+### Ejecutar las pruebas
+
+Para ejecutar todas las pruebas unitarias:
+
+```bash
+mvn test
+```
+
+Las pruebas verifican el funcionamiento de las clases principales, la validación de datos, la gestión de incidencias, las estadísticas y la persistencia.
+
+### Persistencia
+
+El archivo `tickets.txt` debe encontrarse en el directorio de trabajo del proyecto.
+
+Si el archivo no existe, la aplicación comienza con una colección vacía de incidencias.
+
+Para guardar los cambios realizados durante la ejecución, se debe seleccionar la opción **6. Guardar incidencias** del menú.
+## Responsabilidades de las clases
+
+### `Ticket`
+
+Representa una incidencia individual.
+
+Sus responsabilidades son:
+
+- Almacenar el identificador de la incidencia.
+- Almacenar la descripción.
+- Mantener el estado de la incidencia.
+- Validar los datos necesarios para crear una incidencia válida.
+- Permitir cerrar una incidencia mediante el método `cerrar()`.
+- Impedir modificaciones del identificador y la descripción después de la creación.
+
+### `GestorTickets`
+
+Se encarga de gestionar la colección de incidencias.
+
+Sus responsabilidades son:
+
+- Almacenar las incidencias.
+- Generar identificadores positivos y únicos.
+- Crear nuevas incidencias.
+- Buscar incidencias por identificador.
+- Añadir incidencias recuperadas desde el archivo.
+- Calcular las estadísticas de incidencias abiertas y cerradas.
+- Devolver una copia de la colección para proteger su estructura interna.
+
+### `ArchivoTickets`
+
+Se encarga de la persistencia de las incidencias.
+
+Sus responsabilidades son:
+
+- Leer las incidencias desde `tickets.txt`.
+- Reconstruir las incidencias almacenadas.
+- Guardar las incidencias en el archivo.
+- Validar los datos recuperados.
+- Detectar identificadores duplicados o datos inválidos.
+- Gestionar el caso en el que el archivo no exista.
+
+### `AplicacionHelpDesk`
+
+Es la clase encargada de la interacción con el usuario.
+
+Sus responsabilidades son:
+
+- Mostrar el menú principal.
+- Leer las entradas mediante `Scanner`.
+- Mostrar los mensajes por consola.
+- Gestionar las diferentes opciones del menú.
+- Coordinar las operaciones entre `GestorTickets` y `ArchivoTickets`.
+- Cargar los datos al iniciar la aplicación.
+- Controlar la salida del programa.
+- ## Limitaciones conocidas
+
+- La aplicación funciona mediante una **interfaz de consola**, por lo que no dispone de interfaz gráfica.
+- La persistencia se realiza mediante un archivo de texto (`tickets.txt`), no mediante una base de datos.
+- El guardado de las incidencias es **manual** mediante la opción correspondiente del menú; no existe guardado automático al cerrar el programa.
+- La aplicación está diseñada para ejecutarse de forma local y no permite gestionar incidencias de forma simultánea entre varios usuarios.
+- No existe un sistema de usuarios, autenticación o permisos.
+- Las incidencias únicamente pueden encontrarse mediante su identificador y no mediante búsquedas avanzadas por descripción.
